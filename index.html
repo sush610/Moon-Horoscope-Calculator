@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moon Phase & Horoscope Calculator</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #0a0a1a;
+            color: #e0e0ff;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        h1 {
+            color: #b19cd9;
+            margin-bottom: 30px;
+        }
+        
+        .container {
+            background-color: #1a1a2a;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 0 20px rgba(177, 156, 217, 0.2);
+        }
+        
+        input {
+            padding: 10px;
+            margin: 10px;
+            border-radius: 5px;
+            border: 1px solid #b19cd9;
+            background-color: #0a0a1a;
+            color: white;
+            width: 80%;
+            max-width: 300px;
+        }
+        
+        button {
+            background-color: #b19cd9;
+            color: #0a0a1a;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 15px;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            background-color: #9b87c3;
+            transform: scale(1.05);
+        }
+        
+        #result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 5px;
+            background-color: #2a2a3a;
+            display: none;
+        }
+        
+        .moon-image {
+            width: 250px;
+            height: 250px;
+            margin: 20px auto;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(177, 156, 217, 0.5);
+        }
+        
+        .info-section {
+            text-align: left;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #2a2a3a;
+            border-radius: 5px;
+        }
+        
+        .highlight {
+            color: #b19cd9;
+            font-weight: bold;
+        }
+        
+        .zodiac-sign {
+            font-size: 1.2em;
+            margin: 15px 0;
+        }
+        
+        .horoscope {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #3a3a4a;
+            border-radius: 5px;
+            text-align: left;
+        }
+        
+        .two-columns {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 20px;
+        }
+        
+        .column {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .loading {
+            display: none;
+            margin: 20px;
+            color: #b19cd9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌙 Moon Phase & Horoscope Calculator 🌙</h1>
+        <p>Discover what the moon looked like on your birthday and get your personal horoscope</p>
+        
+        <label for="name">Your Name:</label><br>
+        <input type="text" id="name" placeholder="Enter your name"><br>
+        
+        <label for="birthday">Your Birth Date:</label><br>
+        <input type="date" id="birthday" name="birthday"><br>
+        
+        <button onclick="calculateAll()">Calculate My Results</button>
+        <div class="loading" id="loading">Calculating your cosmic profile...</div>
+        
+        <div id="result">
+            <h2 id="user-greeting"></h2>
+            
+            <div class="two-columns">
+                <div class="column">
+                    <h3>Your Birth Moon</h3>
+                    <div class="moon-image" id="moon-image"></div>
+                    <p id="phase-date"></p>
+                    <div class="info-section">
+                        <p id="phase-description"></p>
+                        <p>Moon age: <span id="moon-age" class="highlight"></span> days</p>
+                        <p>Illumination: <span id="illumination" class="highlight"></span>%</p>
+                    </div>
+                </div>
+                
+                <div class="column">
+                    <h3>Your Horoscope</h3>
+                    <div class="zodiac-sign" id="zodiac-sign"></div>
+                    <div class="horoscope" id="horoscope"></div>
+                    <div class="info-section">
+                        <h4>Your Birth Chart</h4>
+                        <p id="birthstone"></p>
+                        <p id="ruling-planet"></p>
+                        <p id="lucky-numbers"></p>
+                        <p id="compatibility"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // NASA Moon Phase Images
+        const MOON_IMAGES = {
+            "New Moon": "https://svs.gsfc.nasa.gov/vis/a000000/a004600/a004675/phase0001_print.jpg",
+            "Waxing Crescent": "https://svs.gsfc.nasa.gov/vis/a000000/a004600/a004675/phase0003_print.jpg",
+            "First Quarter": "https://svs.gsfc.nasa.gov/vis/a000000/a004600/a004675/phase0007_print.jpg",
+            "Waxing Gibbous": "https://svs.gsfc.nasa.gov/vis/a000000/a004600/a004675/phase0011_print.jpg",
+            "Full Moon": "https://svs.gsfc.nasa.gov/vis/a000000/a004600/a004675/phase0015_print.jpg",
+            "Waning Gibbous": "https://svs.gsfc.nasa.gov/vis/a000000/a004600/a004675/phase0019_print.jpg",
+            "Last Quarter": "https://svs.gsfc.nasa.gov/vis/a000000/a004600/a004675/phase0023_print.jpg",
+            "Waning Crescent": "https://svs.gsfc.nasa.gov/vis/a000000/a004600/a004675/phase0027_print.jpg"
+        };
+
+        // Zodiac sign data
+        const ZODIAC_SIGNS = [
+            { name: "Aries", dates: "Mar 21 - Apr 19", element: "Fire", planet: "Mars", stone: "Diamond", luckyNumbers: [1, 9], compatibleWith: ["Leo", "Sagittarius", "Gemini", "Aquarius"] },
+            { name: "Taurus", dates: "Apr 20 - May 20", element: "Earth", planet: "Venus", stone: "Emerald", luckyNumbers: [2, 6], compatibleWith: ["Virgo", "Capricorn", "Cancer", "Pisces"] },
+            { name: "Gemini", dates: "May 21 - Jun 20", element: "Air", planet: "Mercury", stone: "Pearl", luckyNumbers: [3, 5], compatibleWith: ["Libra", "Aquarius", "Aries", "Leo"] },
+            { name: "Cancer", dates: "Jun 21 - Jul 22", element: "Water", planet: "Moon", stone: "Ruby", luckyNumbers: [2, 7], compatibleWith: ["Scorpio", "Pisces", "Taurus", "Virgo"] },
+            { name: "Leo", dates: "Jul 23 - Aug 22", element: "Fire", planet: "Sun", stone: "Peridot", luckyNumbers: [1, 4], compatibleWith: ["Aries", "Sagittarius", "Gemini", "Libra"] },
+            { name: "Virgo", dates: "Aug 23 - Sep 22", element: "Earth", planet: "Mercury", stone: "Sapphire", luckyNumbers: [5, 8], compatibleWith: ["Taurus", "Capricorn", "Cancer", "Scorpio"] },
+            { name: "Libra", dates: "Sep 23 - Oct 22", element: "Air", planet: "Venus", stone: "Opal", luckyNumbers: [6, 9], compatibleWith: ["Gemini", "Aquarius", "Leo", "Sagittarius"] },
+            { name: "Scorpio", dates: "Oct 23 - Nov 21", element: "Water", planet: "Pluto", stone: "Topaz", luckyNumbers: [8, 11], compatibleWith: ["Cancer", "Pisces", "Virgo", "Capricorn"] },
+            { name: "Sagittarius", dates: "Nov 22 - Dec 21", element: "Fire", planet: "Jupiter", stone: "Turquoise", luckyNumbers: [3, 7], compatibleWith: ["Aries", "Leo", "Libra", "Aquarius"] },
+            { name: "Capricorn", dates: "Dec 22 - Jan 19", element: "Earth", planet: "Saturn", stone: "Garnet", luckyNumbers: [4, 8], compatibleWith: ["Taurus", "Virgo", "Scorpio", "Pisces"] },
+            { name: "Aquarius", dates: "Jan 20 - Feb 18", element: "Air", planet: "Uranus", stone: "Amethyst", luckyNumbers: [7, 9], compatibleWith: ["Gemini", "Libra", "Aries", "Sagittarius"] },
+            { name: "Pisces", dates: "Feb 19 - Mar 20", element: "Water", planet: "Neptune", stone: "Aquamarine", luckyNumbers: [3, 12], compatibleWith: ["Cancer", "Scorpio", "Taurus", "Capricorn"] }
+        ];
+
+        // Cache for moon calculations
+        const moonCache = {};
+
+        function calculateAll() {
+            const name = document.getElementById('name').value.trim();
+            const birthdayInput = document.getElementById('birthday').value;
+            
+            if (!name || !birthdayInput) {
+                alert('Please enter both your name and birth date');
+                return;
+            }
+            
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('result').style.display = 'none';
+            
+            setTimeout(() => {
+                const birthday = new Date(birthdayInput);
+                
+                // 1. Calculate Moon Phase (with caching)
+                const moonPhase = getMoonPhase(birthday);
+                
+                // 2. Get Zodiac Sign
+                const zodiac = getZodiacSign(birthday);
+                
+                // 3. Generate Horoscope
+                const horoscope = generateHoroscope(name, zodiac, moonPhase.age);
+                
+                // Update UI
+                document.getElementById('user-greeting').textContent = `Cosmic Profile for ${name}`;
+                
+                // Moon phase info
+                document.getElementById('phase-date').textContent = `On ${birthday.toDateString()}:`;
+                document.getElementById('phase-description').textContent = moonPhase.description;
+                document.getElementById('moon-age').textContent = moonPhase.age.toFixed(2);
+                document.getElementById('illumination').textContent = (moonPhase.illumination * 100).toFixed(2);
+                document.getElementById('moon-image').style.backgroundImage = `url('${MOON_IMAGES[moonPhase.phase]}')`;
+                
+                // Zodiac info
+                document.getElementById('zodiac-sign').innerHTML = 
+                    `♈♉♊♋♌♍♎♏♐♑♒♓<br><span class="highlight">${zodiac.name}</span> (${zodiac.dates})`;
+                
+                // Horoscope info
+                document.getElementById('horoscope').innerHTML = 
+                    `<p><strong>Today's Message:</strong> ${horoscope.prediction}</p>
+                     <p><strong>Element:</strong> ${zodiac.element}</p>`;
+                
+                // Birth chart info
+                document.getElementById('birthstone').innerHTML = 
+                    `<strong>Birthstone:</strong> <span class="highlight">${zodiac.stone}</span>`;
+                document.getElementById('ruling-planet').innerHTML = 
+                    `<strong>Ruling Planet:</strong> <span class="highlight">${zodiac.planet}</span>`;
+                document.getElementById('lucky-numbers').innerHTML = 
+                    `<strong>Lucky Numbers:</strong> <span class="highlight">${zodiac.luckyNumbers.join(', ')}</span>`;
+                document.getElementById('compatibility').innerHTML = 
+                    `<strong>Most Compatible With:</strong> <span class="highlight">${zodiac.compatibleWith.join(', ')}</span>`;
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('result').style.display = 'block';
+            }, 100);
+        }
+        
+        function getMoonPhase(date) {
+            const cacheKey = date.toDateString();
+            if (moonCache[cacheKey]) {
+                return moonCache[cacheKey];
+            }
+            
+            // Original accurate calculation
+            const year = date.getFullYear();
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            
+            let a = Math.floor((14 - month) / 12);
+            let y = year + 4800 - a;
+            let m = month + 12 * a - 3;
+            
+            let jd = day + Math.floor((153 * m + 2) / 5) + 365 * y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) - 32045;
+            
+            const newMoonJd = 2451550.1;
+            const daysSinceNewMoon = jd - newMoonJd;
+            const moonCycles = daysSinceNewMoon / 29.530588853;
+            const moonAge = (moonCycles - Math.floor(moonCycles)) * 29.530588853;
+            
+            const illumination = 0.5 * (1 - Math.cos(2 * Math.PI * moonAge / 29.530588853));
+            
+            let phase, description;
+            
+            if (moonAge < 1) {
+                phase = "New Moon";
+                description = "A time of new beginnings. Those born under a new moon are often innovative and initiate new projects.";
+            } else if (moonAge < 7.4) {
+                phase = "Waxing Crescent";
+                description = "A thin sliver of the moon becomes visible. Those born under this phase are often determined and building toward goals.";
+            } else if (moonAge < 8) {
+                phase = "First Quarter";
+                description = "Half of the moon's disk is illuminated. First quarter moon babies are often decisive and action-oriented.";
+            } else if (moonAge < 14.8) {
+                phase = "Waxing Gibbous";
+                description = "More than half of the moon is illuminated. Those born under this phase often refine ideas and systems.";
+            } else if (moonAge < 15.8) {
+                phase = "Full Moon";
+                description = "The entire face of the moon is illuminated. Full moon babies are often charismatic and emotionally expressive.";
+            } else if (moonAge < 22.1) {
+                phase = "Waning Gibbous";
+                description = "The illuminated portion is decreasing. These individuals are often teachers and communicators.";
+            } else if (moonAge < 23) {
+                phase = "Last Quarter";
+                description = "Half of the moon's disk is illuminated. Last quarter natives often help others through transitions.";
+            } else {
+                phase = "Waning Crescent";
+                description = "Only a thin sliver remains visible. Waning crescent babies are often wise and spiritually inclined.";
+            }
+            
+            const result = {
+                phase: phase,
+                description: description,
+                age: moonAge,
+                illumination: illumination
+            };
+            
+            moonCache[cacheKey] = result;
+            return result;
+        }
+        
+        function getZodiacSign(date) {
+            const day = date.getDate();
+            const month = date.getMonth() + 1;
+            
+            if ((month === 3 && day >= 21) || (month === 4 && day <= 19)) return ZODIAC_SIGNS[0];
+            if ((month === 4 && day >= 20) || (month === 5 && day <= 20)) return ZODIAC_SIGNS[1];
+            if ((month === 5 && day >= 21) || (month === 6 && day <= 20)) return ZODIAC_SIGNS[2];
+            if ((month === 6 && day >= 21) || (month === 7 && day <= 22)) return ZODIAC_SIGNS[3];
+            if ((month === 7 && day >= 23) || (month === 8 && day <= 22)) return ZODIAC_SIGNS[4];
+            if ((month === 8 && day >= 23) || (month === 9 && day <= 22)) return ZODIAC_SIGNS[5];
+            if ((month === 9 && day >= 23) || (month === 10 && day <= 22)) return ZODIAC_SIGNS[6];
+            if ((month === 10 && day >= 23) || (month === 11 && day <= 21)) return ZODIAC_SIGNS[7];
+            if ((month === 11 && day >= 22) || (month === 12 && day <= 21)) return ZODIAC_SIGNS[8];
+            if ((month === 12 && day >= 22) || (month === 1 && day <= 19)) return ZODIAC_SIGNS[9];
+            if ((month === 1 && day >= 20) || (month === 2 && day <= 18)) return ZODIAC_SIGNS[10];
+            return ZODIAC_SIGNS[11]; // Pisces
+        }
+        
+        function generateHoroscope(name, zodiac, moonAge) {
+            const predictions = [
+                "The stars align in your favor today, bringing unexpected opportunities.",
+                "Your creativity shines brightly under the current celestial configuration.",
+                "A financial windfall may come your way - be open to new possibilities.",
+                "Relationships take center stage as Venus graces your sector of love.",
+                "Trust your intuition today - it's sharper than you realize.",
+                "A chance encounter could lead to an important connection.",
+                "Your hard work is about to pay off in surprising ways.",
+                "Communication is key today - speak your truth with kindness.",
+                "Travel opportunities may arise - be ready to explore new horizons.",
+                "Your natural leadership abilities will be recognized by others.",
+                "A long-held dream may suddenly seem within reach.",
+                "Balance is needed - remember to care for yourself as you care for others."
+            ];
+            
+            const nameSum = name.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+            const predictionIndex = (nameSum + zodiac.luckyNumbers[0] + moonAge) % predictions.length;
+            
+            return {
+                prediction: predictions[predictionIndex]
+            };
+        }
+    </script>
+</body>
+</html>
